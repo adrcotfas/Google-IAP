@@ -28,12 +28,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             .connect()
 
         iapConnector.setOnInAppEventsListener(object : InAppEventsListener {
-
-            override fun onSubscriptionsFetched(skuDetailsList: List<DataWrappers.SkuInfo>) {
-                fetchedSkuDetailsList.addAll(skuDetailsList)
-                Log.d(tag, "Retrieved SKU details list : $skuDetailsList")
-            }
-
             override fun onInAppProductsFetched(skuDetailsList: List<DataWrappers.SkuInfo>) {
                 fetchedSkuDetailsList.addAll(skuDetailsList)
                 Log.d(tag, "Retrieved SKU details list : $skuDetailsList")
@@ -73,6 +67,14 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 result: DataWrappers.BillingResponse?
             ) {
                 Log.d(tag, "Error : ${result?.message}")
+            }
+
+            override fun onNoOwnedProductsFound() {
+                Log.d(tag, "onNoOwnedProductsFound")
+            }
+
+            override fun onNotOwnedProductFound(sku: String) {
+                Log.d(tag, "onNotOwnedProductFound: + $sku")
             }
         })
 
