@@ -193,7 +193,7 @@ class BillingService(
 
                     // Acknowledge the purchase if it hasn't already been acknowledged.
                     // Acknowledge all non-consumables too to identify voided purchases
-                    if (!purchase.isAcknowledged || consumableKeys.contains(purchase.skus[0])) {
+                    if (!purchase.isAcknowledged || nonConsumableKeys.contains(purchase.skus[0])) {
                         val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(purchase.purchaseToken).build()
                         mBillingClient.acknowledgePurchase(acknowledgePurchaseParams) {
