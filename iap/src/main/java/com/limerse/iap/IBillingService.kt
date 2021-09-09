@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.CallSuper
+import com.android.billingclient.api.BillingClient
 
 abstract class IBillingService {
 
@@ -26,6 +27,15 @@ abstract class IBillingService {
         subscriptionServiceListeners.remove(subscriptionServiceListener)
     }
 
+    fun billingSetupSuccessful() {
+        for (billingServiceListener in purchaseServiceListeners) {
+            billingServiceListener.onBillingSetupSuccess()
+        }
+        for (billingServiceListener in subscriptionServiceListeners) {
+            billingServiceListener.onBillingSetupSuccess()
+        }
+    }
+
     /**
      * @param purchaseInfo       - product specifier
      * @param isRestore - a flag indicating whether it's a fresh purchase or restored product
@@ -36,12 +46,48 @@ abstract class IBillingService {
         }
     }
 
-    fun productOwnedInternal(purchaseInfo: DataWrappers.PurchaseInfo, isRestore: Boolean) {
+    private fun productOwnedInternal(purchaseInfo: DataWrappers.PurchaseInfo, isRestore: Boolean) {
         for (purchaseServiceListener in purchaseServiceListeners) {
             if (isRestore) {
                 purchaseServiceListener.onProductRestored(purchaseInfo)
             } else {
                 purchaseServiceListener.onProductPurchased(purchaseInfo)
+            }
+        }
+    }
+
+    fun productAcknowledged(purchaseInfo: DataWrappers.PurchaseInfo) {
+        findUiHandler().post {
+            purchaseAcknowledgedInternal(purchaseInfo)
+        }
+    }
+
+    private fun purchaseAcknowledgedInternal(purchaseInfo: DataWrappers.PurchaseInfo) {
+        if (purchaseInfo.skuInfo.type == BillingClient.SkuType.INAPP) {
+            for (billingServiceListener in purchaseServiceListeners) {
+                billingServiceListener.onPurchaseAcknowledged(purchaseInfo.sku)
+            }
+        } else if (purchaseInfo.skuInfo.type == BillingClient.SkuType.SUBS) {
+            for (billingServiceListener in subscriptionServiceListeners) {
+                billingServiceListener.onPurchaseAcknowledged(purchaseInfo.sku)
+            }
+        }
+    }
+
+    fun purchaseNotFound(purchaseInfo: DataWrappers.PurchaseInfo) {
+        findUiHandler().post {
+            purchaseNotFoundInternal(purchaseInfo)
+        }
+    }
+
+    private fun purchaseNotFoundInternal(purchaseInfo: DataWrappers.PurchaseInfo) {
+        if (purchaseInfo.skuInfo.type == BillingClient.SkuType.INAPP) {
+            for (billingServiceListener in purchaseServiceListeners) {
+                billingServiceListener.onPurchaseNotFound(purchaseInfo.sku)
+            }
+        } else if (purchaseInfo.skuInfo.type == BillingClient.SkuType.SUBS) {
+            for (billingServiceListener in subscriptionServiceListeners) {
+                billingServiceListener.onPurchaseNotFound(purchaseInfo.sku)
             }
         }
     }
@@ -56,7 +102,7 @@ abstract class IBillingService {
         }
     }
 
-    fun subscriptionOwnedInternal(purchaseInfo: DataWrappers.PurchaseInfo, isRestore: Boolean) {
+    private fun subscriptionOwnedInternal(purchaseInfo: DataWrappers.PurchaseInfo, isRestore: Boolean) {
         for (subscriptionServiceListener in subscriptionServiceListeners) {
             if (isRestore) {
                 subscriptionServiceListener.onSubscriptionRestored(purchaseInfo)
@@ -72,7 +118,7 @@ abstract class IBillingService {
         }
     }
 
-    fun updatePricesInternal(iapkeyPrices: Map<String, String>) {
+    private fun updatePricesInternal(iapkeyPrices: Map<String, String>) {
         for (billingServiceListener in purchaseServiceListeners) {
             billingServiceListener.onPricesUpdated(iapkeyPrices)
         }

@@ -6,6 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import com.android.billingclient.api.*
+import com.android.billingclient.api.BillingClient.BillingResponseCode.DEVELOPER_ERROR
+import com.android.billingclient.api.BillingClient.BillingResponseCode.OK
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -15,7 +17,7 @@ class BillingService(
     private val nonConsumableKeys: List<String>,
     private val consumableKeys: List<String>,
     private val subscriptionSkuKeys: List<String>
-) : IBillingService(), PurchasesUpdatedListener, BillingClientStateListener, AcknowledgePurchaseResponseListener {
+) : IBillingService(), PurchasesUpdatedListener, BillingClientStateListener {
 
     private lateinit var mBillingClient: BillingClient
     private var decodedKey: String? = null
@@ -27,7 +29,8 @@ class BillingService(
     override fun init(key: String?) {
         decodedKey = key
 
-        mBillingClient = BillingClient.newBuilder(context).setListener(this).enablePendingPurchases().build()
+        mBillingClient =
+            BillingClient.newBuilder(context).setListener(this).enablePendingPurchases().build()
         mBillingClient.startConnection(this)
     }
 
@@ -36,6 +39,7 @@ class BillingService(
         log("onBillingSetupFinishedOkay: billingResult: $billingResult")
 
         if (billingResult.isOk()) {
+            billingSetupSuccessful()
             nonConsumableKeys.querySkuDetails(BillingClient.SkuType.INAPP) {
                 consumableKeys.querySkuDetails(BillingClient.SkuType.INAPP) {
                     subscriptionSkuKeys.querySkuDetails(BillingClient.SkuType.SUBS) {
@@ -53,9 +57,11 @@ class BillingService(
      * New purchases will be provided to the PurchasesUpdatedListener.
      */
     private suspend fun queryPurchases() {
-        val inappResult: PurchasesResult = mBillingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP)
+        val inappResult: PurchasesResult =
+            mBillingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP)
         processPurchases(inappResult.purchasesList, isRestore = true)
-        val subsResult: PurchasesResult = mBillingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS)
+        val subsResult: PurchasesResult =
+            mBillingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS)
         processPurchases(subsResult.purchasesList, isRestore = true)
     }
 
@@ -115,7 +121,7 @@ class BillingService(
         val debugMessage = billingResult.debugMessage
         log("onPurchasesUpdated: responseCode:$responseCode debugMessage: $debugMessage")
         when (responseCode) {
-            BillingClient.BillingResponseCode.OK -> {
+            OK -> {
                 log("onPurchasesUpdated. purchase: $purchases")
                 processPurchases(purchases)
             }
@@ -128,7 +134,7 @@ class BillingService(
                     queryPurchases()
                 }
             }
-            BillingClient.BillingResponseCode.DEVELOPER_ERROR ->
+            DEVELOPER_ERROR ->
                 Log.e(
                     TAG, "onPurchasesUpdated: Developer error means that Google Play " +
                             "does not recognize the configuration. If you are just getting started, " +
@@ -156,21 +162,24 @@ class BillingService(
                             /**
                              * Consume the purchase
                              */
-                            if(consumableKeys.contains(purchase.skus[0])){
+                            if (consumableKeys.contains(purchase.skus[0])) {
                                 mBillingClient.consumeAsync(
-                                    ConsumeParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+                                    ConsumeParams.newBuilder()
+                                        .setPurchaseToken(purchase.purchaseToken).build()
                                 ) { billingResult, _ ->
                                     when (billingResult.responseCode) {
-                                        BillingClient.BillingResponseCode.OK -> {
+                                        OK -> {
                                             productOwned(getPurchaseInfo(purchase), false)
                                         }
                                         else -> {
-                                            Log.d(TAG, "Handling consumables : Error during consumption attempt -> ${billingResult.debugMessage}")
+                                            Log.d(
+                                                TAG,
+                                                "Handling consumables : Error during consumption attempt -> ${billingResult.debugMessage}"
+                                            )
                                         }
                                     }
                                 }
-                            }
-                            else{
+                            } else {
                                 productOwned(getPurchaseInfo(purchase), isRestore)
                             }
                         }
@@ -183,12 +192,15 @@ class BillingService(
                     if (!purchase.isAcknowledged) {
                         val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(purchase.purchaseToken).build()
-                        mBillingClient.acknowledgePurchase(acknowledgePurchaseParams, this)
+                        mBillingClient.acknowledgePurchase(acknowledgePurchaseParams) {
+                            onAcknowledgePurchaseResponse(purchase, it)
+                        }
                     }
                 } else {
                     Log.e(
                         TAG, "processPurchases failed. purchase: $purchase " +
-                                "purchaseState: ${purchase.purchaseState} isSkuReady: ${purchase.skus[0].isSkuReady()}")
+                                "purchaseState: ${purchase.purchaseState} isSkuReady: ${purchase.skus[0].isSkuReady()}"
+                    )
                 }
             }
         } else {
@@ -197,7 +209,7 @@ class BillingService(
     }
 
     private fun getPurchaseInfo(purchase: Purchase): DataWrappers.PurchaseInfo {
-        return  DataWrappers.PurchaseInfo(
+        return DataWrappers.PurchaseInfo(
             getSkuInfo(skusDetails[purchase.skus[0]]!!),
             purchase.purchaseState,
             purchase.developerPayload,
@@ -307,8 +319,19 @@ class BillingService(
         log("onBillingServiceDisconnected")
     }
 
-    override fun onAcknowledgePurchaseResponse(billingResult: BillingResult) {
+    private fun onAcknowledgePurchaseResponse(
+        purchase: Purchase,
+        billingResult: BillingResult
+    ) {
         log("onAcknowledgePurchaseResponse: billingResult: $billingResult")
+        when (billingResult.responseCode) {
+            OK -> productAcknowledged(getPurchaseInfo(purchase))
+            DEVELOPER_ERROR -> {
+                if (billingResult.debugMessage == "Item is not owned by the user.") {
+                    purchaseNotFound(getPurchaseInfo(purchase))
+                }
+            }
+        }
     }
 
     override fun close() {
@@ -317,7 +340,7 @@ class BillingService(
     }
 
     private fun BillingResult.isOk(): Boolean {
-        return this.responseCode == BillingClient.BillingResponseCode.OK
+        return this.responseCode == OK
     }
 
     private fun log(message: String) {

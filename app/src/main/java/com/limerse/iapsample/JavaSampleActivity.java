@@ -2,6 +2,7 @@ package com.limerse.iapsample;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.limerse.iap.DataWrappers;
@@ -39,7 +40,22 @@ class JavaSampleActivity extends AppCompatActivity {
         );
 
         iapConnector.addPurchaseListener(new PurchaseServiceListener() {
+            @Override
+            public void onBillingSetupSuccess() {
+
+            }
+
             public void onPricesUpdated(@NotNull Map iapKeyPrices) {
+
+            }
+
+            @Override
+            public void onPurchaseAcknowledged(@NonNull String sku) {
+
+            }
+
+            @Override
+            public void onPurchaseNotFound(@NonNull String sku) {
 
             }
 
@@ -66,6 +82,21 @@ class JavaSampleActivity extends AppCompatActivity {
             }
         });
         iapConnector.addSubscriptionListener(new SubscriptionServiceListener() {
+            @Override
+            public void onPurchaseNotFound(@NonNull String sku) {
+
+            }
+
+            @Override
+            public void onPurchaseAcknowledged(@NonNull String sku) {
+
+            }
+
+            @Override
+            public void onBillingSetupSuccess() {
+
+            }
+
             public void onSubscriptionRestored(DataWrappers.PurchaseInfo purchaseInfo) {
             }
 

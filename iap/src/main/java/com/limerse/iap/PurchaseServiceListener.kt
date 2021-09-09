@@ -2,13 +2,6 @@ package com.limerse.iap
 
 interface PurchaseServiceListener : BillingServiceListener {
     /**
-     * Callback will be triggered upon obtaining information about product prices
-     *
-     * @param iapKeyPrices - a map with available products
-     */
-    override fun onPricesUpdated(iapKeyPrices: Map<String, String>)
-
-    /**
      * Callback will be triggered when a product purchased successfully
      *
      * @param purchaseInfo - specifier of owned product

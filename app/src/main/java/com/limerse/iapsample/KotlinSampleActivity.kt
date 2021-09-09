@@ -33,8 +33,19 @@ class KotlinSampleActivity : AppCompatActivity() {
         )
 
         iapConnector.addPurchaseListener(object : PurchaseServiceListener {
+
+            override fun onBillingSetupSuccess() {
+
+            }
+
             override fun onPricesUpdated(iapKeyPrices: Map<String, String>) {
                 // list of available products will be received here, so you can update UI with prices if needed
+            }
+
+            override fun onPurchaseAcknowledged(sku: String) {
+            }
+
+            override fun onPurchaseNotFound(sku: String) {
             }
 
             override fun onProductPurchased(purchaseInfo: DataWrappers.PurchaseInfo) {
@@ -76,8 +87,17 @@ class KotlinSampleActivity : AppCompatActivity() {
                 }
             }
 
+            override fun onBillingSetupSuccess() {
+            }
+
             override fun onPricesUpdated(iapKeyPrices: Map<String, String>) {
                 // list of available products will be received here, so you can update UI with prices if needed
+            }
+
+            override fun onPurchaseAcknowledged(sku: String) {
+            }
+
+            override fun onPurchaseNotFound(sku: String) {
             }
         })
 
