@@ -149,8 +149,9 @@ class BillingService(
     private fun processPurchases(purchasesList: List<Purchase>?, isRestore: Boolean = false) {
         if (!purchasesList.isNullOrEmpty()) {
             log("processPurchases: " + purchasesList.size + " purchase(s)")
+
             purchases@ for ((index, purchase) in purchasesList.withIndex()) {
-                log("purchase ${index}: $purchase")
+                log("purchase ${index}: ${purchase.skus[0]}")
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     if (!isSignatureValid(purchase)) {
                         log("processPurchases. Signature is not valid for: $purchase")
@@ -191,7 +192,8 @@ class BillingService(
                     }
 
                     // Acknowledge the purchase if it hasn't already been acknowledged.
-                    if (!purchase.isAcknowledged) {
+                    // Acknowledge all non-consumables too to identify voided purchases
+                    if (!purchase.isAcknowledged || consumableKeys.contains(purchase.skus[0])) {
                         val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(purchase.purchaseToken).build()
                         mBillingClient.acknowledgePurchase(acknowledgePurchaseParams) {
