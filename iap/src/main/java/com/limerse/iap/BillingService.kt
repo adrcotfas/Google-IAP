@@ -57,6 +57,7 @@ class BillingService(
      * New purchases will be provided to the PurchasesUpdatedListener.
      */
     private suspend fun queryPurchases() {
+        log("queryPurchases")
         val inappResult: PurchasesResult =
             mBillingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP)
         processPurchases(inappResult.purchasesList, isRestore = true)
@@ -149,6 +150,7 @@ class BillingService(
         if (!purchasesList.isNullOrEmpty()) {
             log("processPurchases: " + purchasesList.size + " purchase(s)")
             purchases@ for (purchase in purchasesList) {
+                log("processPurchases: ")
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && purchase.skus[0].isSkuReady()) {
                     if (!isSignatureValid(purchase)) {
                         log("processPurchases. Signature is not valid for: $purchase")
@@ -269,6 +271,7 @@ class BillingService(
 
         mBillingClient.querySkuDetailsAsync(params.build()) { billingResult, skuDetailsList ->
             if (billingResult.isOk()) {
+                log("querySkuDetails. type: $type")
                 skuDetailsList?.forEach { skusDetails[it.sku] = it }
 
                 skusDetails.mapNotNull { entry ->
@@ -292,6 +295,7 @@ class BillingService(
 
         val skuDetailsCached = skusDetails[this]
         if (skuDetailsCached != null) {
+            log("skuDetailes are cached: $skusDetails")
             done(skuDetailsCached)
             return
         }
@@ -301,7 +305,9 @@ class BillingService(
 
         mBillingClient.querySkuDetailsAsync(params.build()) { billingResult, skuDetailsList ->
             if (billingResult.isOk()) {
+                log("launchBillingFlow. skuDetailList: $skuDetailsList")
                 val skuDetails: SkuDetails? = skuDetailsList?.find { it.sku == this }
+                log("launchBillingFlow. skuDetails: $skuDetails")
                 skusDetails[this] = skuDetails
                 done(skuDetails)
             } else {
