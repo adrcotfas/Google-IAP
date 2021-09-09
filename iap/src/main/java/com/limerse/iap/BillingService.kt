@@ -159,6 +159,7 @@ class BillingService(
                     }
 
                     // Grant entitlement to the user.
+                    log("Grant entitlement to the user.")
                     val skuDetails = skusDetails[purchase.skus[0]]
                     when (skuDetails?.type) {
                         BillingClient.SkuType.INAPP -> {
@@ -194,6 +195,7 @@ class BillingService(
                     // Acknowledge the purchase if it hasn't already been acknowledged.
                     // Acknowledge all non-consumables too to identify voided purchases
                     if (!purchase.isAcknowledged || nonConsumableKeys.contains(purchase.skus[0])) {
+                        log("acknowledgePurchase $purchase.skus[0]")
                         val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(purchase.purchaseToken).build()
                         mBillingClient.acknowledgePurchase(acknowledgePurchaseParams) {
