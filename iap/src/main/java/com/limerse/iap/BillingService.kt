@@ -36,7 +36,7 @@ class BillingService(
 
     @DelicateCoroutinesApi
     override fun onBillingSetupFinished(billingResult: BillingResult) {
-        log("onBillingSetupFinishedOkay: billingResult: $billingResult")
+        log("onBillingSetupFinishedOkay: billingResult: ${billingResult.responseCode} ${billingResult.debugMessage}")
 
         if (billingResult.isOk()) {
             billingSetupSuccessful()
