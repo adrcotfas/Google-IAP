@@ -151,7 +151,7 @@ class BillingService(
             log("processPurchases: " + purchasesList.size + " purchase(s)")
             purchases@ for (purchase in purchasesList) {
                 log("processPurchases: ")
-                if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && purchase.skus[0].isSkuReady()) {
+                if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     if (!isSignatureValid(purchase)) {
                         log("processPurchases. Signature is not valid for: $purchase")
                         continue@purchases
@@ -295,7 +295,7 @@ class BillingService(
 
         val skuDetailsCached = skusDetails[this]
         if (skuDetailsCached != null) {
-            log("skuDetailes are cached: $skusDetails")
+            log("skuDetails are cached: $skusDetails")
             done(skuDetailsCached)
             return
         }
