@@ -149,8 +149,8 @@ class BillingService(
     private fun processPurchases(purchasesList: List<Purchase>?, isRestore: Boolean = false) {
         if (!purchasesList.isNullOrEmpty()) {
             log("processPurchases: " + purchasesList.size + " purchase(s)")
-            purchases@ for (purchase in purchasesList) {
-                log("processPurchases: ")
+            purchases@ for ((index, purchase) in purchasesList.withIndex()) {
+                log("purchase ${index}: $purchase")
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     if (!isSignatureValid(purchase)) {
                         log("processPurchases. Signature is not valid for: $purchase")
@@ -329,7 +329,7 @@ class BillingService(
         purchase: Purchase,
         billingResult: BillingResult
     ) {
-        log("onAcknowledgePurchaseResponse: billingResult: $billingResult")
+        log("onAcknowledgePurchaseResponse: billingResult: ${billingResult.responseCode} ${billingResult.debugMessage}")
         when (billingResult.responseCode) {
             OK -> productAcknowledged(getPurchaseInfo(purchase))
             DEVELOPER_ERROR -> {
